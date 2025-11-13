@@ -8,10 +8,9 @@ This guide provides step-by-step instructions for deploying and using the Claude
 
 Watch a quick demonstration of the Claude Code Web Agent in action:
 
-<video width="100%" controls>
-  <source src="https://du7u4d2q1sjz6.cloudfront.net/cc_on_ac.mp4" type="video/mp4">
-  Your browser does not support the video tag. [Download the video](https://du7u4d2q1sjz6.cloudfront.net/cc_on_ac.mp4)
-</video>
+[![Claude Code Web Agent Demo](assets/main_page.webp)](https://du7u4d2q1sjz6.cloudfront.net/cc_on_ac.mp4)
+
+**Click the image above to watch the video demo** or [download it here](https://du7u4d2q1sjz6.cloudfront.net/cc_on_ac.mp4).
 
 ---
 

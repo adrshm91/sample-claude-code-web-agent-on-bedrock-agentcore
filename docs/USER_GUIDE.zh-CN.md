@@ -8,10 +8,9 @@
 
 观看 Claude Code Web Agent 的快速演示:
 
-<video width="100%" controls>
-  <source src="https://du7u4d2q1sjz6.cloudfront.net/cc_on_ac.mp4" type="video/mp4">
-  您的浏览器不支持视频标签。[下载视频](https://du7u4d2q1sjz6.cloudfront.net/cc_on_ac.mp4)
-</video>
+[![Claude Code Web Agent Demo](assets/main_page.webp)](https://du7u4d2q1sjz6.cloudfront.net/cc_on_ac.mp4)
+
+**点击上方图片观看视频演示**，或者[点击这里下载视频](https://du7u4d2q1sjz6.cloudfront.net/cc_on_ac.mp4)。
 
 ---
 
