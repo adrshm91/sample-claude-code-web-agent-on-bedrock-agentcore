@@ -220,6 +220,14 @@ uv run pytest
 - `S3_WORKSPACE_BUCKET`：工作区的 S3 bucket
 - `OAUTH_CALLBACK_URL`：OAuth 回调 URL（Amplify 应用 URL）
 
+**Claude Agent SDK Tools 配置：**
+
+- `ALLOWED_TOOLS`：Agent session 中启用的工具列表（逗号分隔，默认：所有工具）
+  - 可用工具：`Read`、`Write`、`Edit`、`Glob`、`Grep`、`Bash`、`NotebookEdit`、`WebFetch`、`Task`、`TodoWrite`、`BashOutput`、`KillShell`、`AskUserQuestion`、`Skill`、`SlashCommand`、`ExitPlanMode`、`ListMcpResourcesTool`、`ReadMcpResourceTool`
+  - 示例：`ALLOWED_TOOLS=Read,Write,Edit,Glob,Grep,Bash`
+- `AUTO_ALLOW_TOOLS`：无需用户 permission 自动批准的工具列表（逗号分隔，默认：`Read,Write,Edit,Bash,Glob,Grep`）
+  - 示例：`AUTO_ALLOW_TOOLS=Read,Glob,Grep`
+
 ### Web 客户端环境变量
 
 在 `web_client/.env` 中配置：

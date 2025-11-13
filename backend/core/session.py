@@ -149,15 +149,42 @@ class AgentSession:
                 "preset": "claude_code",
             }
 
+        # Configure allowed tools from environment variable
+        # Default: all tools enabled
+        default_tools = [
+            # Core file operations
+            "Read", "Write", "Edit",
+            # Code search and navigation
+            "Glob", "Grep",
+            # Shell execution
+            "Bash",
+            # Notebook editing
+            "NotebookEdit",
+            # Web fetching
+            "WebFetch",
+            # Task management
+            "Task", "TodoWrite",
+            # Bash output and shell management
+            "BashOutput", "KillShell",
+            # User interaction
+            "AskUserQuestion",
+            # Skills and commands
+            "Skill", "SlashCommand",
+            # Plan mode
+            "ExitPlanMode",
+            # MCP resources
+            "ListMcpResourcesTool", "ReadMcpResourceTool",
+        ]
+
+        # Read from environment variable (comma-separated list)
+        allowed_tools_env = os.environ.get("ALLOWED_TOOLS", "").strip()
+        if allowed_tools_env:
+            allowed_tools = [tool.strip() for tool in allowed_tools_env.split(",") if tool.strip()]
+        else:
+            allowed_tools = default_tools
+
         options_dict = {
-            "allowed_tools": [
-                # Core file operations
-                "Read", "Write", "Edit",
-                # Code search and navigation
-                "Glob", "Grep",
-                # Shell execution
-                "Bash",
-            ],
+            "allowed_tools": allowed_tools,
             "system_prompt": system_prompt_config,
             "max_turns": 0,
             "can_use_tool": self.permission_callback,
@@ -282,8 +309,16 @@ class AgentSession:
         Returns:
             Permission result (allow or deny)
         """
-        # Auto-allow read-only operations
-        if tool_name in ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]:
+        # Auto-allow operations based on environment variable
+        # Default: auto-allow core file and shell operations
+        auto_allow_tools_env = os.environ.get("AUTO_ALLOW_TOOLS", "").strip()
+        if auto_allow_tools_env:
+            auto_allow_tools = [tool.strip() for tool in auto_allow_tools_env.split(",") if tool.strip()]
+        else:
+            # Default auto-allow list (core operations)
+            auto_allow_tools = ["Read", "Write", "Edit", "Bash", "Glob", "Grep"]
+
+        if tool_name in auto_allow_tools:
             return PermissionResultAllow()
 
         # Create permission request

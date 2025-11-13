@@ -220,6 +220,14 @@ Key environment variables for the backend (set via `.agentcore_output` after dep
 - `S3_WORKSPACE_BUCKET`: S3 bucket for workspaces
 - `OAUTH_CALLBACK_URL`: OAuth callback URL (Amplify app URL)
 
+**Claude Agent SDK Tools Configuration:**
+
+- `ALLOWED_TOOLS`: Comma-separated list of tools to enable in agent sessions (default: all tools)
+  - Available tools: `Read`, `Write`, `Edit`, `Glob`, `Grep`, `Bash`, `NotebookEdit`, `WebFetch`, `Task`, `TodoWrite`, `BashOutput`, `KillShell`, `AskUserQuestion`, `Skill`, `SlashCommand`, `ExitPlanMode`, `ListMcpResourcesTool`, `ReadMcpResourceTool`
+  - Example: `ALLOWED_TOOLS=Read,Write,Edit,Glob,Grep,Bash`
+- `AUTO_ALLOW_TOOLS`: Comma-separated list of tools to auto-approve without user permission (default: `Read,Write,Edit,Bash,Glob,Grep`)
+  - Example: `AUTO_ALLOW_TOOLS=Read,Glob,Grep`
+
 ### Web Client Environment Variables
 
 Configure in `web_client/.env`:
