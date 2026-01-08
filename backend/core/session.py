@@ -243,16 +243,30 @@ class AgentSession:
 
         # Print SDK options for debugging
         print(f"[Session] ========== SDK Connection Options ==========")
-        print(f"[Session] allowed_tools: {len(options_dict.get('allowed_tools', []))} tools")
+        print(f"[Session] allowed_tools: {options_dict.get('allowed_tools', [])}")
         print(f"[Session] model: {options_dict.get('model', 'default')}")
         print(f"[Session] cwd: {options_dict.get('cwd', 'None')}")
         print(f"[Session] resume: {options_dict.get('resume', 'None (new session)')}")
         print(f"[Session] permission_mode: {options_dict.get('permission_mode', 'default')}")
         print(f"[Session] max_turns: {options_dict.get('max_turns', 0)}")
+        print(f"[Session] system_prompt: {options_dict.get('system_prompt', {})}")
         if mcp_servers:
-            print(f"[Session] mcp_servers: {list(mcp_servers.keys())}")
+            print(f"[Session] mcp_servers count: {len(mcp_servers)}")
+            print(f"[Session] mcp_servers names: {list(mcp_servers.keys())}")
+            print(f"[Session] mcp_servers full config:")
+            import json
+            for name, config in mcp_servers.items():
+                print(f"[Session]   {name}: {json.dumps(config, indent=4)}")
+        else:
+            print(f"[Session] mcp_servers: None")
         if env_vars:
             print(f"[Session] env vars: {list(env_vars.keys())}")
+            for key, value in env_vars.items():
+                # Mask sensitive values
+                masked_value = value if len(value) < 20 else value[:10] + "..." + value[-5:]
+                print(f"[Session]   {key}={masked_value}")
+        else:
+            print(f"[Session] env vars: None")
         print(f"[Session] ===============================================")
 
         options = ClaudeAgentOptions(**options_dict)
