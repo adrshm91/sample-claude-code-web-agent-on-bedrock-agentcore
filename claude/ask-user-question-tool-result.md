@@ -144,7 +144,24 @@ async def send_message(self, message: str | dict) -> SendMessageResponse:
     await self.client.query(message)
 ```
 
-**Important**: The SDK requires a proper `UserMessage` object, not just a dict. We construct it using `UserMessage(**message)` when receiving a dict from the API.
+**Important**: The SDK requires proper typed objects:
+- `UserMessage` object (not plain dict)
+- `ToolResultBlock` for tool_result content blocks
+- We construct these from the dict sent by the frontend:
+  ```python
+  if isinstance(message, dict):
+      content_blocks = []
+      for block in message['content']:
+          if block.get('type') == 'tool_result':
+              content_blocks.append(
+                  ToolResultBlock(
+                      tool_use_id=block['tool_use_id'],
+                      content=block.get('content'),
+                      is_error=block.get('is_error')
+                  )
+              )
+      message = UserMessage(content=content_blocks)
+  ```
 
 ## Message Flow
 

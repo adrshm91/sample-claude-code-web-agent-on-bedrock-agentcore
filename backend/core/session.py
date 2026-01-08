@@ -26,6 +26,7 @@ from claude_agent_sdk import (
     ResultMessage,
     TextBlock,
     ToolPermissionContext,
+    ToolResultBlock,
     ToolUseBlock,
     UserMessage,
 )
@@ -396,8 +397,26 @@ class AgentSession:
         # Send message - SDK accepts Union[str, UserMessage]
         # If message is a dict with 'role' and 'content', construct UserMessage object
         if isinstance(message, dict):
-            # Convert dict to UserMessage object
-            message = UserMessage(**message)
+            # Convert dict to UserMessage object with proper ContentBlock types
+            content_blocks = []
+            if isinstance(message.get('content'), list):
+                for block in message['content']:
+                    if isinstance(block, dict) and block.get('type') == 'tool_result':
+                        # Construct ToolResultBlock
+                        content_blocks.append(
+                            ToolResultBlock(
+                                tool_use_id=block['tool_use_id'],
+                                content=block.get('content'),
+                                is_error=block.get('is_error')
+                            )
+                        )
+                    else:
+                        # Keep other blocks as-is (shouldn't happen for tool_result case)
+                        content_blocks.append(block)
+                message = UserMessage(content=content_blocks)
+            else:
+                # Simple string content
+                message = UserMessage(content=message.get('content', ''))
 
         await self.client.query(message)
 
@@ -462,8 +481,26 @@ class AgentSession:
         # Send message - SDK accepts Union[str, UserMessage]
         # If message is a dict with 'role' and 'content', construct UserMessage object
         if isinstance(message, dict):
-            # Convert dict to UserMessage object
-            message = UserMessage(**message)
+            # Convert dict to UserMessage object with proper ContentBlock types
+            content_blocks = []
+            if isinstance(message.get('content'), list):
+                for block in message['content']:
+                    if isinstance(block, dict) and block.get('type') == 'tool_result':
+                        # Construct ToolResultBlock
+                        content_blocks.append(
+                            ToolResultBlock(
+                                tool_use_id=block['tool_use_id'],
+                                content=block.get('content'),
+                                is_error=block.get('is_error')
+                            )
+                        )
+                    else:
+                        # Keep other blocks as-is (shouldn't happen for tool_result case)
+                        content_blocks.append(block)
+                message = UserMessage(content=content_blocks)
+            else:
+                # Simple string content
+                message = UserMessage(content=message.get('content', ''))
 
         await self.client.query(message)
 
