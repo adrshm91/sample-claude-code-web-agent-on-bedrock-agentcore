@@ -928,6 +928,7 @@ function AppContent() {
               currentProject={currentProject}
               selectedMcpServers={selectedMcpServers}
               onMcpServersChange={setSelectedMcpServers}
+              sessionId={sessionId}
             />
           )}
         </main>

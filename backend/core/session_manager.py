@@ -411,6 +411,38 @@ class SessionManager:
         self.sessions[new_session_id] = session
         print(f"[SessionManager] Updated session ID: {old_session_id} → {new_session_id}")
 
+    async def update_mcp_servers(self, session_id: str, mcp_server_ids: list[str]) -> str:
+        """
+        Update MCP servers for an active session by recreating the SDK client.
+
+        Args:
+            session_id: The session ID to update
+            mcp_server_ids: New list of MCP server names to enable
+
+        Returns:
+            The session ID
+
+        Raises:
+            HTTPException: If session not found
+        """
+        if session_id not in self.sessions:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        session = self.sessions[session_id]
+
+        # Update MCP server IDs
+        session.mcp_server_ids = mcp_server_ids
+
+        # Disconnect old client
+        await session.disconnect()
+
+        # Reconnect with new MCP servers (this will reload MCP config and recreate client)
+        await session.connect(resume_session_id=session_id)
+
+        print(f"[SessionManager] Updated MCP servers for session {session_id}: {mcp_server_ids}")
+
+        return session_id
+
     async def close_session(self, session_id: str):
         """
         Close and cleanup a session.

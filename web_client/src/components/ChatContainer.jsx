@@ -18,7 +18,8 @@ function ChatContainer({
   serverUrl,
   currentProject,
   selectedMcpServers,
-  onMcpServersChange
+  onMcpServersChange,
+  sessionId
 }) {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
@@ -136,6 +137,32 @@ function ChatContainer({
     if (newModel !== currentModel && onModelChange) {
       setSelectedModel(newModel)
       onModelChange(newModel)
+    }
+  }
+
+  const handleMcpServersChange = async (newSelected) => {
+    if (!sessionId) {
+      // No active session, just update local state
+      onMcpServersChange(newSelected)
+      return
+    }
+
+    try {
+      // Update MCP servers on server by recreating SDK client
+      const { createAPIClient } = await import('../api/client')
+      const { getAgentCoreSessionId } = await import('../utils/authUtils')
+      const agentCoreSessionId = await getAgentCoreSessionId(currentProject)
+      const apiClient = createAPIClient(serverUrl, agentCoreSessionId)
+
+      await apiClient.updateMcpServers(sessionId, newSelected)
+
+      // Update local state after successful server update
+      onMcpServersChange(newSelected)
+
+      console.log(`✅ MCP servers updated dynamically: ${newSelected.join(', ')}`)
+    } catch (error) {
+      console.error('Failed to update MCP servers:', error)
+      alert(`Failed to update MCP servers: ${error.message}`)
     }
   }
 
@@ -310,7 +337,7 @@ function ChatContainer({
                             const newSelected = e.target.checked
                               ? [...(selectedMcpServers || []), name]
                               : (selectedMcpServers || []).filter(id => id !== name)
-                            onMcpServersChange(newSelected)
+                            handleMcpServersChange(newSelected)
                           }}
                           disabled={sending || isRunning}
                         />
