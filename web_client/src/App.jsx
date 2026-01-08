@@ -7,6 +7,7 @@ import FileBrowser from './components/FileBrowser'
 import GitPanel from './components/GitPanel'
 import ProjectPanel from './components/ProjectPanel'
 import MCPServersPanel from './components/MCPServersPanel'
+import SkillsPanel from './components/SkillsPanel'
 import FilePreview from './components/FilePreview'
 import SettingsModal from './components/SettingsModal'
 import TerminalPTY from './components/TerminalPTY'
@@ -101,7 +102,7 @@ function AppContent() {
   const [showProjectSwitcher, setShowProjectSwitcher] = useState(false)
 
   // Sidebar tab state
-  const [activeTab, setActiveTab] = useState('sessions') // 'files' | 'git' | 'sessions' | 'projects' | 'mcp-servers'
+  const [activeTab, setActiveTab] = useState('sessions') // 'files' | 'git' | 'sessions' | 'projects' | 'mcp-servers' | 'skills'
 
   // GitHub auth state
   const [githubAuthStatus, setGithubAuthStatus] = useState(null) // null | 'success' | 'pending' | 'error'
@@ -820,10 +821,19 @@ function AppContent() {
               title="MCP Servers"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
-                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
-                <line x1="6" y1="6" x2="6.01" y2="6"></line>
-                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+              </svg>
+            </button>
+            <button
+              className={`sidebar-tab ${activeTab === 'skills' ? 'active' : ''}`}
+              onClick={() => setActiveTab('skills')}
+              title="Skills"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+                <rect x="3" y="3" width="6" height="6" rx="1"></rect>
+                <rect x="3" y="13" width="6" height="6" rx="1"></rect>
+                <rect x="13" y="13" width="6" height="6" rx="1"></rect>
               </svg>
             </button>
           </div>
@@ -883,6 +893,15 @@ function AppContent() {
                 serverUrl={settings.serverUrl}
                 disabled={serverDisconnected}
                 isActive={activeTab === 'mcp-servers'}
+                currentProject={currentProject}
+              />
+            )}
+
+            {activeTab === 'skills' && (
+              <SkillsPanel
+                serverUrl={settings.serverUrl}
+                disabled={serverDisconnected}
+                isActive={activeTab === 'skills'}
                 currentProject={currentProject}
               />
             )}
