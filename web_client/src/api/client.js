@@ -95,12 +95,17 @@ class DirectAPIClient {
     return response.json()
   }
 
-  async sendMessageStream(sessionId, message) {
+  async sendMessageStream(sessionId, message, model = null, mcpServerIds = null) {
     const authHeaders = await getAuthHeaders()
     const agentCoreSessionId = authHeaders['X-Amzn-Bedrock-AgentCore-Runtime-Session-Id']
 
     // Append session ID as query parameter for SSE (EventSource doesn't support custom headers)
     const url = `${this.baseUrl}/sessions/${sessionId}/messages/stream${agentCoreSessionId ? `?agentcore_session_id=${encodeURIComponent(agentCoreSessionId)}` : ''}`
+
+    // Build request payload with optional model and mcp_server_ids
+    const payload = { message }
+    if (model) payload.model = model
+    if (mcpServerIds !== null) payload.mcp_server_ids = mcpServerIds
 
     // EventSource doesn't support POST, so we need to use fetch for the initial request
     // Then create EventSource for subsequent streaming
@@ -110,7 +115,7 @@ class DirectAPIClient {
         'Content-Type': 'application/json',
         ...authHeaders
       },
-      body: JSON.stringify({ message })
+      body: JSON.stringify(payload)
     })
 
     handleFetchResponse(response)
@@ -1083,12 +1088,18 @@ class InvocationsAPIClient {
     )
   }
 
-  async sendMessageStream(sessionId, message) {
+  async sendMessageStream(sessionId, message, model = null, mcpServerIds = null) {
     const authHeaders = await getAuthHeaders()
+
+    // Build payload with optional model and mcp_server_ids
+    const payload = { message }
+    if (model) payload.model = model
+    if (mcpServerIds !== null) payload.mcp_server_ids = mcpServerIds
+
     const body = {
       path: '/sessions/{session_id}/messages/stream',
       method: 'POST',
-      payload: { message },
+      payload,
       path_params: { session_id: sessionId }
     }
 

@@ -149,7 +149,7 @@ function AppContent() {
     loadSession,
     retrySession,
     interruptSession
-  } = useClaudeAgent(settings.serverUrl, user?.userId, currentProject, serverDisconnected, handleMessagesChanged, selectedMcpServers)
+  } = useClaudeAgent(settings.serverUrl, user?.userId, currentProject, serverDisconnected, handleMessagesChanged, selectedMcpServers, settings.model)
 
   // Save settings to localStorage whenever they change
   useEffect(() => {

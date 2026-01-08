@@ -12,7 +12,7 @@ const formatModel = (model) => {
     .replace('claude-3-opus-', 'opus-')
 }
 
-export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userId = null, projectName = null, disabled = false, onMessagesChanged = null, selectedMcpServers = []) {
+export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userId = null, projectName = null, disabled = false, onMessagesChanged = null, selectedMcpServers = [], currentModel = null) {
   const [connected, setConnected] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [sessionId, setSessionId] = useState(null)
@@ -32,6 +32,7 @@ export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userI
   const MAX_SESSION_ERRORS = 10 // Stop after 10 consecutive errors
   const onMessagesChangedRef = useRef(onMessagesChanged) // Callback for messages change
   const selectedMcpServersRef = useRef(selectedMcpServers) // MCP servers selection
+  const currentModelRef = useRef(currentModel) // Current model
 
   // Update callback ref when it changes
   useEffect(() => {
@@ -42,6 +43,11 @@ export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userI
   useEffect(() => {
     selectedMcpServersRef.current = selectedMcpServers
   }, [selectedMcpServers])
+
+  // Update current model ref when it changes
+  useEffect(() => {
+    currentModelRef.current = currentModel
+  }, [currentModel])
 
   // Initialize API client when userId or projectName changes
   useEffect(() => {
@@ -288,8 +294,13 @@ export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userI
       // Add user message to UI
       setMessages(prev => [...prev, { type: 'text', role: 'user', content: message }])
 
-      // Use streaming endpoint
-      const eventSource = await apiClientRef.current.sendMessageStream(sessionId, message)
+      // Use streaming endpoint with current model and MCP servers
+      const eventSource = await apiClientRef.current.sendMessageStream(
+        sessionId,
+        message,
+        currentModelRef.current,
+        selectedMcpServersRef.current
+      )
 
       if (!eventSource) {
         throw new Error('Failed to create event stream')

@@ -36,6 +36,8 @@ class SendMessageRequest(BaseModel):
     """Request to send a message in a session."""
 
     message: str | dict[str, Any]  # Can be string or structured message (e.g., with tool_result)
+    model: Optional[str] = None  # Optional model to use for this message (updates session model if different)
+    mcp_server_ids: Optional[list[str]] = None  # Optional MCP server IDs (updates session MCP servers if different)
 
 
 class MessageBlock(BaseModel):

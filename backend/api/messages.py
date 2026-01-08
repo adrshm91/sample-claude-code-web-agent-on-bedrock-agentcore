@@ -86,15 +86,27 @@ async def send_message_stream(session_id: str, request: SendMessageRequest):
     """
     Send a message in a session with streaming response (SSE).
 
+    Automatically updates model and MCP servers if provided in request and different from current.
+
     Args:
         session_id: The session ID
-        request: Message request
+        request: Message request (with optional model and mcp_server_ids)
 
     Returns:
         Server-Sent Events stream with real-time updates
     """
     manager = get_session_manager()
     session = await manager.get_session(session_id)
+
+    # Check and update model if provided and different
+    if request.model and request.model != session.model:
+        print(f"[Messages] Updating model: {session.model} → {request.model}")
+        await session.set_model(request.model)
+
+    # Check and update MCP servers if provided and different
+    if request.mcp_server_ids is not None and request.mcp_server_ids != session.mcp_server_ids:
+        print(f"[Messages] Updating MCP servers: {session.mcp_server_ids} → {request.mcp_server_ids}")
+        await manager.update_mcp_servers(session_id, request.mcp_server_ids)
 
     async def event_generator():
         """Generate SSE events from the agent response."""
