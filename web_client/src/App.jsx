@@ -18,7 +18,7 @@ import { useClaudeAgent } from './hooks/useClaudeAgent'
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx'
 import { setAuthErrorHandler, getAgentCoreSessionId } from './utils/authUtils'
 import { createAPIClient } from './api/client'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Briefcase } from 'lucide-react'
 
 const SETTINGS_STORAGE_KEY = 'claude-agent-settings'
 const SERVER_DISCONNECTED_KEY = 'claude-agent-server-disconnected'
@@ -829,10 +829,7 @@ function AppContent() {
               onClick={() => setActiveTab('skills')}
               title="Skills"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-              </svg>
+              <Briefcase size={16} />
             </button>
           </div>
 
