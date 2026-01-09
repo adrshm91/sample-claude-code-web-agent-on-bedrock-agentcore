@@ -116,15 +116,6 @@ async def lifespan(app: FastAPI):
     else:
         print("⚠️  S3_WORKSPACE_BUCKET not configured, .claude sync/backup disabled")
 
-    # Start gRPC server if enabled
-    grpc_enabled = os.environ.get('ENABLE_GRPC_SERVER', 'false').lower() == 'true'
-    grpc_task = None
-
-    if grpc_enabled:
-        from .grpc_server.server import start_grpc_server_background
-        grpc_port = int(os.environ.get('GRPC_PORT', '50051'))
-        grpc_task = start_grpc_server_background(pty_manager, port=grpc_port)
-
     print("=" * 80)
     print("✅ Server startup complete")
     print("=" * 80)
@@ -140,14 +131,6 @@ async def lifespan(app: FastAPI):
     # Stop Claude sync manager backup task
     if claude_sync_manager:
         await claude_sync_manager.stop_backup_task()
-
-    # Stop gRPC server
-    if grpc_task:
-        grpc_task.cancel()
-        try:
-            await grpc_task
-        except:
-            pass
 
     print("✅ Server shutdown complete")
 
