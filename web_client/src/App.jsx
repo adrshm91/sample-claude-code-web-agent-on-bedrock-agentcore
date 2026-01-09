@@ -169,6 +169,14 @@ function AppContent() {
     }
   }, [serverDisconnected])
 
+  // Auto-connect when user logs in and server is connected
+  useEffect(() => {
+    if (!user?.userId || serverDisconnected || connected) return
+
+    console.log('🔗 Auto-connecting with current settings...')
+    connect(settings)
+  }, [user?.userId, serverDisconnected, connected, connect, settings])
+
   // Load available projects when user logs in and server is connected
   useEffect(() => {
     if (!user?.userId || serverDisconnected) return
@@ -484,11 +492,12 @@ function AppContent() {
   }
 
   const handleNewSession = () => {
-    if (connected) {
-      clearSession()
-    } else {
-      // Auto-connect with current settings
+    // Just clear the session - new one will be created on first message
+    // But first ensure we've "connected" to save the config
+    if (!connected) {
       connect(settings)
+    } else {
+      clearSession()
     }
   }
 
@@ -874,19 +883,8 @@ function AppContent() {
         </aside>
 
         <main className="content-area">
-          {!connected ? (
-            <div className="welcome-screen">
-              <div className="welcome-content">
-                <h2>Welcome to Claude Agent</h2>
-                <p>Select a session from the sidebar or create a new one to get started.</p>
-                {!hideSettingsButton && (
-                  <p className="welcome-hint">
-                    Configure settings using the ⚙️ button in the top-right corner.
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
+          {/* Always show ChatContainer - it will handle session creation on first message */}
+          {true && (
             <ChatContainer
               sessionInfo={sessionInfo}
               messages={messages}

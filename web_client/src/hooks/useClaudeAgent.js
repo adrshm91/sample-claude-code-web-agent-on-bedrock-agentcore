@@ -170,7 +170,7 @@ export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userI
 
   // Permission checking is now handled via streaming events, no need for polling
 
-  // Connect to server
+  // Connect to server (just save config, don't create session yet)
   const connect = useCallback(async (config) => {
     if (!userId) {
       console.error('Cannot connect: userId is required')
@@ -188,7 +188,7 @@ export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userI
       return
     }
 
-    console.log(`🔗 Connecting with Agent Core Session ID: ${agentCoreSessionIdRef.current}`)
+    console.log(`🔗 Ready to connect with Agent Core Session ID: ${agentCoreSessionIdRef.current}`)
 
     // Use existing API client (already created in useEffect)
     if (!apiClientRef.current) {
@@ -199,29 +199,9 @@ export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userI
       // Check server health
       await apiClientRef.current.healthCheck()
 
-      // Create session (backend auto-detects proxy mode from model)
-      const payload = {}
-      if (config.model.trim()) {
-        payload.model = config.model.trim()
-      }
-      if (config.backgroundModel.trim()) {
-        payload.background_model = config.backgroundModel.trim()
-      }
-      if (config.cwd.trim()) {
-        payload.cwd = config.cwd.trim()
-      }
-      if (selectedMcpServersRef.current && selectedMcpServersRef.current.length > 0) {
-        payload.mcp_server_ids = selectedMcpServersRef.current
-      }
-
-      const data = await apiClientRef.current.createSession(payload)
-      setSessionId(data.session_id)
+      // Don't create session yet - it will be created on first message
       setConnected(true)
-
-      // Update session info with session ID only
-      setSessionInfo(`Session ID: ${data.session_id}`)
-
-      addSystemMessage('✅ Connected to Claude Agent')
+      addSystemMessage('✅ Ready to chat (session will be created on first message)')
     } catch (error) {
       addErrorMessage(`Connection failed: ${error.message}`)
     } finally {
@@ -245,7 +225,7 @@ export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userI
     }
   }, [sessionId])
 
-  // Clear session and create new one
+  // Clear session (don't create new one yet - it will be created on first message)
   const clearSession = useCallback(async () => {
     try {
       // Close current session
@@ -253,30 +233,12 @@ export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userI
         await apiClientRef.current.deleteSession(sessionId)
       }
 
-      // Create new session with same config (backend auto-detects proxy mode)
-      const config = configRef.current
-      const payload = {}
-      if (config.model.trim()) {
-        payload.model = config.model.trim()
-      }
-      if (config.backgroundModel.trim()) {
-        payload.background_model = config.backgroundModel.trim()
-      }
-      if (config.cwd.trim()) {
-        payload.cwd = config.cwd.trim()
-      }
-      if (selectedMcpServersRef.current && selectedMcpServersRef.current.length > 0) {
-        payload.mcp_server_ids = selectedMcpServersRef.current
-      }
-
-      const data = await apiClientRef.current.createSession(payload)
-      setSessionId(data.session_id)
+      // Clear UI state (don't create new session yet)
+      setSessionId(null)
       setMessages([])
+      setSessionInfo('')
 
-      // Update session info with new session ID
-      setSessionInfo(`Session ID: ${data.session_id}`)
-
-      addSystemMessage('✅ New session started')
+      addSystemMessage('✅ Session cleared (new session will be created on first message)')
     } catch (error) {
       addErrorMessage(`Failed to clear session: ${error.message}`)
     }
@@ -284,15 +246,51 @@ export function useClaudeAgent(initialServerUrl = 'http://127.0.0.1:8000', userI
 
   // Send message with streaming
   const sendMessage = useCallback(async (message) => {
-    if (!sessionId || !message.trim() || !apiClientRef.current) return
+    if (!message.trim() || !apiClientRef.current) return
 
     try {
+      // If no session exists yet, create one first
+      let currentSessionId = sessionId
+      if (!currentSessionId) {
+        console.log('📝 No session exists, creating one before sending message...')
+
+        // Get config from configRef (should be set by connect or have default)
+        const config = configRef.current || {
+          serverUrl: serverUrlRef.current,
+          model: currentModelRef.current || '',
+          backgroundModel: '',
+          cwd: '/workspace'
+        }
+
+        // Create session
+        const payload = {}
+        if (config.model && config.model.trim()) {
+          payload.model = config.model.trim()
+        }
+        if (config.backgroundModel && config.backgroundModel.trim()) {
+          payload.background_model = config.backgroundModel.trim()
+        }
+        if (config.cwd && config.cwd.trim()) {
+          payload.cwd = config.cwd.trim()
+        }
+        if (selectedMcpServersRef.current && selectedMcpServersRef.current.length > 0) {
+          payload.mcp_server_ids = selectedMcpServersRef.current
+        }
+
+        const data = await apiClientRef.current.createSession(payload)
+        currentSessionId = data.session_id
+        setSessionId(currentSessionId)
+        setConnected(true)
+        setSessionInfo(`Session ID: ${currentSessionId}`)
+        console.log(`✅ Session created: ${currentSessionId}`)
+      }
+
       // Add user message to UI
       setMessages(prev => [...prev, { type: 'text', role: 'user', content: message }])
 
       // Use streaming endpoint with current model and MCP servers
       const eventSource = await apiClientRef.current.sendMessageStream(
-        sessionId,
+        currentSessionId,
         message,
         currentModelRef.current,
         selectedMcpServersRef.current
