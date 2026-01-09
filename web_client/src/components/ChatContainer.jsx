@@ -146,6 +146,27 @@ function ChatContainer({
     console.log(`✅ MCP servers selection updated: ${newSelected.join(', ')}`)
   }
 
+  const handleMcpSelectorToggle = async () => {
+    const newShowState = !showMcpSelector
+    setShowMcpSelector(newShowState)
+
+    // Refresh MCP servers list when opening the selector
+    if (newShowState && serverUrl) {
+      try {
+        const { createAPIClient } = await import('../api/client')
+        const { getAgentCoreSessionId } = await import('../utils/authUtils')
+        const agentCoreSessionId = await getAgentCoreSessionId(currentProject)
+        const apiClient = createAPIClient(serverUrl, agentCoreSessionId)
+
+        const data = await apiClient.listMCPServers()
+        setAvailableMcpServers(data.servers || {})
+        console.log('🔄 Refreshed MCP servers list')
+      } catch (err) {
+        console.error('Failed to refresh MCP servers:', err)
+      }
+    }
+  }
+
   // Handle input area resize
   useEffect(() => {
     const handleMouseMove = (e) => {
@@ -283,7 +304,7 @@ function ChatContainer({
             <div className="mcp-selector-compact">
               <button
                 className="mcp-selector-toggle"
-                onClick={() => setShowMcpSelector(!showMcpSelector)}
+                onClick={handleMcpSelectorToggle}
                 disabled={sending || isRunning}
                 title="Select MCP Servers"
               >
