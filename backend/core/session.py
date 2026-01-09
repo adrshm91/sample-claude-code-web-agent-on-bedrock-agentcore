@@ -754,25 +754,34 @@ class AgentSession:
             try:
                 msg = await anext(response_iterator)
 
-                # Print raw message details BEFORE type checking
+                # Helper function to truncate large content for logging
+                def truncate_for_log(content, max_length=500):
+                    """Truncate content to max_length for logging to prevent BlockingIOError"""
+                    content_str = str(content)
+                    if len(content_str) > max_length:
+                        return content_str[:max_length] + f"... (truncated, total length: {len(content_str)})"
+                    return content_str
+
+                # Print raw message details BEFORE type checking (with truncation)
                 print(f"\n[Session] ========== SDK MESSAGE RECEIVED ==========")
                 print(f"[Session] Message type: {type(msg).__name__}")
                 print(f"[Session] Message full type: {type(msg)}")
-                print(f"[Session] Message repr: {repr(msg)}")
-                print(f"[Session] Message str: {str(msg)}")
-                print(f"[Session] Message attributes: {dir(msg)}")
+                print(f"[Session] Message repr: {truncate_for_log(repr(msg))}")
+                print(f"[Session] Message str: {truncate_for_log(str(msg))}")
+                # Skip printing all attributes (dir() can be very long)
+                # print(f"[Session] Message attributes: {dir(msg)}")
 
-                # Try to print common attributes
+                # Try to print common attributes (with truncation)
                 if hasattr(msg, '__dict__'):
-                    print(f"[Session] Message __dict__: {msg.__dict__}")
+                    print(f"[Session] Message __dict__: {truncate_for_log(msg.__dict__)}")
                 if hasattr(msg, 'content'):
-                    print(f"[Session] Message.content: {msg.content}")
+                    print(f"[Session] Message.content: {truncate_for_log(msg.content)}")
                 if hasattr(msg, 'role'):
                     print(f"[Session] Message.role: {msg.role}")
                 if hasattr(msg, 'model'):
                     print(f"[Session] Message.model: {msg.model}")
                 if hasattr(msg, 'text'):
-                    print(f"[Session] Message.text: {msg.text}")
+                    print(f"[Session] Message.text: {truncate_for_log(msg.text)}")
                 print(f"[Session] ===============================================\n")
 
             except asyncio.TimeoutError:
