@@ -94,6 +94,16 @@ async def send_message_stream(session_id: str, request: SendMessageRequest):
     Returns:
         Server-Sent Events stream with real-time updates
     """
+    print(f"\n[API] ========== send_message_stream START ==========")
+    print(f"[API] session_id: {session_id}")
+    print(f"[API] request.message type: {type(request.message)}")
+    if isinstance(request.message, str):
+        print(f"[API] request.message (string): {request.message[:200]}...")
+    else:
+        print(f"[API] request.message (dict): {request.message}")
+    print(f"[API] request.model: {request.model}")
+    print(f"[API] request.mcp_server_ids: {request.mcp_server_ids}")
+
     manager = get_session_manager()
 
     # Get session and ensure model and MCP servers match request
@@ -106,12 +116,37 @@ async def send_message_stream(session_id: str, request: SendMessageRequest):
 
     async def event_generator():
         """Generate SSE events from the agent response."""
+        event_count = 0
         try:
             async for event in session.send_message_stream(request.message):
+                event_count += 1
+                print(f"[API] Event #{event_count}: type={event.get('type', 'unknown')}")
+                if event.get('type') == 'text':
+                    content_preview = event.get('content', '')[:100]
+                    print(f"[API]   text content preview: {content_preview}...")
+                elif event.get('type') == 'tool_use':
+                    print(f"[API]   tool_name: {event.get('tool_name')}")
+                    print(f"[API]   tool_input: {event.get('tool_input')}")
+                elif event.get('type') == 'permission':
+                    perm = event.get('permission', {})
+                    print(f"[API]   permission tool: {perm.get('tool_name')}")
+                elif event.get('type') == 'result':
+                    print(f"[API]   cost_usd: {event.get('cost_usd')}")
+                    print(f"[API]   num_turns: {event.get('num_turns')}")
+                elif event.get('type') == 'done':
+                    print(f"[API]   session_id: {event.get('session_id')}")
+
                 # Format as SSE: data: {json}\n\n
                 # Use safe_json_dumps to handle non-serializable objects
                 yield f"data: {safe_json_dumps(event)}\n\n"
+
+            print(f"[API] ========== send_message_stream END (total events: {event_count}) ==========\n")
         except Exception as e:
+            print(f"[API] ========== send_message_stream ERROR ==========")
+            print(f"[API] Exception: {type(e).__name__}: {str(e)}")
+            import traceback
+            print(f"[API] Traceback:\n{traceback.format_exc()}")
+            print(f"[API] ================================================\n")
             # Send error event
             error_event = {
                 "type": "error",

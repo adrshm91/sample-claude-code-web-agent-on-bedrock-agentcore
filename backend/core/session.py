@@ -587,6 +587,16 @@ class AgentSession:
         Raises:
             HTTPException: If session not connected
         """
+        print(f"\n[Session] ========== send_message_stream START ==========")
+        print(f"[Session] session_id: {self.session_id}")
+        print(f"[Session] message type: {type(message)}")
+        if isinstance(message, str):
+            print(f"[Session] message (string): {message[:200]}...")
+        else:
+            print(f"[Session] message (dict): {message}")
+        print(f"[Session] current model: {self.model}")
+        print(f"[Session] current mcp_server_ids: {self.mcp_server_ids}")
+
         if not self.client or self.status != "connected":
             raise HTTPException(status_code=400, detail="Session not connected")
 
@@ -594,6 +604,7 @@ class AgentSession:
         self.message_count += 1
 
         # Send initial event
+        print(f"[Session] Yielding 'start' event")
         yield {
             "type": "start",
             "session_id": self.session_id,
@@ -656,13 +667,17 @@ class AgentSession:
             elif isinstance(msg, AssistantMessage):
                 # Assistant message with content blocks
                 print(f"[Session] send_message_stream: Processing AssistantMessage with {len(msg.content)} blocks")
-                for block in msg.content:
+                for i, block in enumerate(msg.content):
                     if isinstance(block, TextBlock):
+                        text_preview = block.text[:100] if block.text else ""
+                        print(f"[Session]   Block #{i+1}: TextBlock (preview: {text_preview}...)")
                         yield {
                             "type": "text",
                             "content": block.text
                         }
                     elif isinstance(block, ToolUseBlock):
+                        print(f"[Session]   Block #{i+1}: ToolUseBlock (name: {block.name}, id: {block.id})")
+                        print(f"[Session]   Tool input: {block.input}")
                         yield {
                             "type": "tool_use",
                             "tool_name": block.name,
@@ -671,16 +686,21 @@ class AgentSession:
                         }
             elif isinstance(msg, ResultMessage):
                 print(f"[Session] send_message_stream: Received ResultMessage")
+                print(f"[Session]   total_cost_usd: {msg.total_cost_usd}")
+                print(f"[Session]   num_turns: {msg.num_turns}")
+                print(f"[Session]   session_id: {msg.session_id if hasattr(msg, 'session_id') else 'N/A'}")
                 # Final result with metadata
                 # Extract real session_id from SDK's ResultMessage
                 real_session_id = msg.session_id if hasattr(msg, 'session_id') else self.session_id
 
                 # Update SessionManager if we got a different session_id from SDK
                 if real_session_id != self.session_id:
+                    print(f"[Session]   Session ID changed: {self.session_id} -> {real_session_id}")
                     from ..core.session_manager import SessionManager
                     from ..server import session_manager
                     session_manager.update_session_id(self.session_id, real_session_id)
 
+                print(f"[Session] Yielding 'result' event")
                 yield {
                     "type": "result",
                     "cost_usd": msg.total_cost_usd,
@@ -689,10 +709,12 @@ class AgentSession:
                 }
 
         # Send completion event with real session_id
+        print(f"[Session] Yielding 'done' event")
         yield {
             "type": "done",
             "session_id": real_session_id if 'real_session_id' in locals() else self.session_id
         }
+        print(f"[Session] ========== send_message_stream END ==========\n")
 
         # Backup to S3 after task completion (if S3 sync is enabled)
         s3_sync_enabled = os.environ.get("ENABLE_S3_SYNC", "true").lower() in ["true", "1", "yes"]
