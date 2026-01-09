@@ -179,8 +179,7 @@ class AgentSession:
             "ExitPlanMode",
             # MCP resources
             "ListMcpResourcesTool", "ReadMcpResourceTool",
-            # MCP tools (wildcard pattern for all MCP server tools)
-            "mcp__*",
+            # Note: MCP tools (mcp__*) are auto-allowed in permission_callback
         ]
 
         # Read from environment variable (comma-separated list)
@@ -401,6 +400,10 @@ class AgentSession:
         Returns:
             Permission result (allow or deny)
         """
+        # Auto-allow all MCP tools (tools from MCP servers)
+        if tool_name.startswith("mcp__"):
+            return PermissionResultAllow()
+
         # Auto-allow operations based on environment variable
         # Default: auto-allow core file and shell operations
         auto_allow_tools_env = os.environ.get("AUTO_ALLOW_TOOLS", "").strip()
