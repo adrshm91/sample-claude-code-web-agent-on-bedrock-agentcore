@@ -73,6 +73,13 @@ class UploadFileResponse(BaseModel):
     size: int
 
 
+class UploadFileBase64Request(BaseModel):
+    """Request to upload file with base64 content."""
+    directory: str
+    filename: str
+    content_base64: str
+
+
 router = APIRouter()
 
 
@@ -326,6 +333,62 @@ async def upload_file(
             success=True,
             path=str(target_path),
             filename=file.filename,
+            size=stat.st_size
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+
+
+@router.post("/files/upload-base64", response_model=UploadFileResponse)
+async def upload_file_base64(request: UploadFileBase64Request):
+    """
+    Upload a file using base64-encoded content.
+    This endpoint is used by invocations mode since it only supports JSON.
+
+    Args:
+        request: Directory path, filename, and base64-encoded content
+
+    Returns:
+        Upload confirmation with file path and size
+    """
+    import base64
+
+    try:
+        # Resolve the target directory
+        target_dir = Path(request.directory).expanduser().resolve()
+
+        # Create directory if it doesn't exist
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        if not target_dir.is_dir():
+            raise HTTPException(status_code=400, detail="Target path is not a directory")
+
+        # Construct target file path
+        target_path = target_dir / request.filename
+
+        # Check if file already exists
+        if target_path.exists():
+            raise HTTPException(status_code=409, detail=f"File already exists: {request.filename}")
+
+        # Decode base64 content and write file
+        try:
+            content = base64.b64decode(request.content_base64)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid base64 content: {str(e)}")
+
+        with open(target_path, 'wb') as f:
+            f.write(content)
+
+        # Get file stats
+        stat = target_path.stat()
+
+        return UploadFileResponse(
+            success=True,
+            path=str(target_path),
+            filename=request.filename,
             size=stat.st_size
         )
 

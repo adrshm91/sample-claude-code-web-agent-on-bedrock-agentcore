@@ -58,34 +58,33 @@ function FilePreview({ serverUrl, filePath, onClose, disabled, currentProject })
   const [editedContent, setEditedContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [imageBlobUrl, setImageBlobUrl] = useState(null)
   const apiClientRef = useRef(null)
   const codeRef = useRef(null)
   const editorContainerRef = useRef(null)
   const editorViewRef = useRef(null)
 
-  // Create API client
+  // Create API client and load file when ready
   useEffect(() => {
     if (disabled) {
       setFileInfo(null)
       return
     }
 
-    const initApiClient = async () => {
+    const initAndLoad = async () => {
+      // Initialize API client if needed
       if (serverUrl && (!apiClientRef.current || apiClientRef.current.baseUrl !== serverUrl)) {
         const agentCoreSessionId = await getAgentCoreSessionId(currentProject)
         apiClientRef.current = createAPIClient(serverUrl, agentCoreSessionId)
       }
-    }
-    initApiClient()
-  }, [serverUrl, disabled])
 
-  // Load file info when filePath changes
-  useEffect(() => {
-    if (disabled) return
-    if (filePath && apiClientRef.current) {
-      loadFileInfo(filePath)
+      // Load file info after API client is ready
+      if (filePath && apiClientRef.current) {
+        loadFileInfo(filePath)
+      }
     }
-  }, [filePath, disabled])
+    initAndLoad()
+  }, [serverUrl, filePath, disabled, currentProject])
 
   // Initialize CodeMirror when entering edit mode
   useEffect(() => {
@@ -248,23 +247,38 @@ function FilePreview({ serverUrl, filePath, onClose, disabled, currentProject })
     }
   }
 
-  const handleDownload = () => {
-    if (!fileInfo || !fileInfo.content) return
+  const handleDownload = async () => {
+    if (!fileInfo || !apiClientRef.current) return
 
-    // Create a blob with the file content
-    const blob = new Blob([fileInfo.content], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-
-    // Create a temporary link and click it
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileInfo.name
-    document.body.appendChild(link)
-    link.click()
-
-    // Clean up
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
+    // For text files with content, create a blob download
+    if (fileInfo.is_text && fileInfo.content) {
+      const blob = new Blob([fileInfo.content], { type: 'text/plain;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = fileInfo.name
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    } else {
+      // For binary files or images, use the API client (supports invocations mode)
+      try {
+        const response = await apiClientRef.current.getRawFile(fileInfo.path, currentProject)
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileInfo.name
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      } catch (err) {
+        console.error('Failed to download file:', err)
+        setError('Failed to download file')
+      }
+    }
   }
 
   const handleDelete = async () => {
@@ -314,12 +328,38 @@ function FilePreview({ serverUrl, filePath, onClose, disabled, currentProject })
     return isImageExt || isImageMime
   }
 
-  const getImageUrl = (path) => {
-    if (!path || !serverUrl) return null
-    // Encode the path for URL
-    const encodedPath = encodeURIComponent(path)
-    return `${serverUrl}/files/raw?path=${encodedPath}`
-  }
+  // Load image blob URL when file info changes and it's an image
+  useEffect(() => {
+    // Cleanup previous blob URL
+    if (imageBlobUrl) {
+      URL.revokeObjectURL(imageBlobUrl)
+      setImageBlobUrl(null)
+    }
+
+    const loadImage = async () => {
+      if (!fileInfo || !apiClientRef.current) return
+      if (fileInfo.is_text) return
+      if (!isImageFile(fileInfo.name, fileInfo.mime_type)) return
+
+      try {
+        const response = await apiClientRef.current.getRawFile(fileInfo.path, currentProject)
+        const blob = await response.blob()
+        const url = URL.createObjectURL(blob)
+        setImageBlobUrl(url)
+      } catch (err) {
+        console.error('Failed to load image:', err)
+      }
+    }
+
+    loadImage()
+
+    // Cleanup on unmount
+    return () => {
+      if (imageBlobUrl) {
+        URL.revokeObjectURL(imageBlobUrl)
+      }
+    }
+  }, [fileInfo, currentProject])
 
   if (!filePath) {
     return (
@@ -343,22 +383,13 @@ function FilePreview({ serverUrl, filePath, onClose, disabled, currentProject })
           {!loading && !error && fileInfo && (
             <>
               {fileInfo.is_text && fileInfo.content && !isEditing && (
-                <>
-                  <button
-                    className="btn-icon btn-edit"
-                    onClick={handleEdit}
-                    title="Edit file"
-                  >
-                    <Edit3 size={16} />
-                  </button>
-                  <button
-                    className="btn-icon btn-download"
-                    onClick={handleDownload}
-                    title="Download file"
-                  >
-                    <Download size={16} />
-                  </button>
-                </>
+                <button
+                  className="btn-icon btn-edit"
+                  onClick={handleEdit}
+                  title="Edit file"
+                >
+                  <Edit3 size={16} />
+                </button>
               )}
               {fileInfo.is_text && fileInfo.content && isEditing && (
                 <>
@@ -381,14 +412,23 @@ function FilePreview({ serverUrl, filePath, onClose, disabled, currentProject })
                 </>
               )}
               {!isEditing && (
-                <button
-                  className="btn-icon btn-delete"
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  title="Delete file"
-                >
-                  {deleting ? <Loader2 size={16} className="spinning" /> : <Trash2 size={16} />}
-                </button>
+                <>
+                  <button
+                    className="btn-icon btn-download"
+                    onClick={handleDownload}
+                    title="Download file"
+                  >
+                    <Download size={16} />
+                  </button>
+                  <button
+                    className="btn-icon btn-delete"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    title="Delete file"
+                  >
+                    {deleting ? <Loader2 size={16} className="spinning" /> : <Trash2 size={16} />}
+                  </button>
+                </>
               )}
             </>
           )}
@@ -477,15 +517,22 @@ function FilePreview({ serverUrl, filePath, onClose, disabled, currentProject })
             <div className="file-content-section">
               <h3>Image Preview</h3>
               <div className="file-image-preview">
-                <img
-                  src={getImageUrl(fileInfo.path)}
-                  alt={fileInfo.name}
-                  onError={(e) => {
-                    e.target.style.display = 'none'
-                    e.target.nextSibling.style.display = 'block'
-                  }}
-                />
-                <div className="file-image-error" style={{ display: 'none' }}>
+                {imageBlobUrl ? (
+                  <img
+                    src={imageBlobUrl}
+                    alt={fileInfo.name}
+                    onError={(e) => {
+                      e.target.style.display = 'none'
+                      e.target.nextSibling.style.display = 'block'
+                    }}
+                  />
+                ) : (
+                  <div className="file-image-loading">
+                    <Loader2 size={32} className="spin" />
+                    <p>Loading image...</p>
+                  </div>
+                )}
+                <div className="file-image-error" style={{ display: imageBlobUrl ? 'none' : undefined }}>
                   <AlertCircle size={32} />
                   <p>Failed to load image</p>
                 </div>

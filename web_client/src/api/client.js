@@ -345,6 +345,18 @@ class DirectAPIClient {
     return response.json()
   }
 
+  async getRawFile(path) {
+    const authHeaders = await getAuthHeaders()
+    const url = `${this.baseUrl}/files/raw?path=${encodeURIComponent(path)}`
+    const response = await fetch(url, {
+      headers: authHeaders
+    })
+    if (!response.ok) {
+      throw new Error('Failed to get raw file')
+    }
+    return response
+  }
+
   async uploadFile(file, directory) {
     const authHeaders = await getAuthHeaders()
     const formData = new FormData()
@@ -1342,36 +1354,64 @@ class InvocationsAPIClient {
     return this._invoke('/files/save', 'POST', payload)
   }
 
-  async uploadFile(file, directory, projectName = null) {
+  async deleteFile(path, projectName = null) {
+    const payload = { path }
+    if (projectName) payload.project_name = projectName
+    return this._invoke('/files/delete', 'POST', payload)
+  }
+
+  async getRawFile(path, projectName = null) {
+    // For raw file download, we need to handle the response specially
+    // since it returns binary data, not JSON
     const authHeaders = await getAuthHeaders()
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('directory', directory)
-    if (projectName) formData.append('project_name', projectName)
+    const payload = { path }
+    if (projectName) payload.project_name = projectName
+
+    const body = {
+      path: '/files/raw',
+      method: 'GET',
+      payload
+    }
 
     const headers = {
+      'Content-Type': 'application/json',
       ...authHeaders
-      // Don't set Content-Type - browser will set it with boundary
     }
 
     if (this.agentCoreSessionId) {
       headers['X-Amzn-Bedrock-AgentCore-Runtime-Session-Id'] = this.agentCoreSessionId
     }
 
-    const response = await fetch(`${this.baseUrl}/files/upload`, {
+    const response = await fetch(`${this.baseUrl}/invocations`, {
       method: 'POST',
       headers,
-      body: formData
+      body: JSON.stringify(body)
     })
 
     handleFetchResponse(response)
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || 'Failed to upload file')
+      throw new Error('Failed to get raw file')
     }
 
-    return response.json()
+    return response
+  }
+
+  async uploadFile(file, directory, projectName = null) {
+    // Convert file to base64 for invocations mode (JSON only)
+    const arrayBuffer = await file.arrayBuffer()
+    const base64Content = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    )
+
+    const payload = {
+      directory,
+      filename: file.name,
+      content_base64: base64Content
+    }
+    if (projectName) payload.project_name = projectName
+
+    return this._invoke('/files/upload', 'POST', payload)
   }
 
   async executeShellCommand(command, cwd) {

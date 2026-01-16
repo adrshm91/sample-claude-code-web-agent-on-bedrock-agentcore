@@ -24,7 +24,17 @@ from .messages import (
     set_permission_mode,
 )
 from .permissions import respond_to_permission
-from .files import get_file_info, list_files, save_file, SaveFileRequest
+from .files import (
+    get_file_info,
+    list_files,
+    save_file,
+    SaveFileRequest,
+    delete_file,
+    DeleteFileRequest,
+    upload_file_base64,
+    UploadFileBase64Request,
+    get_raw_file,
+)
 from .shell import execute_command, get_current_directory, set_current_directory, ShellExecuteRequest
 from .terminal import (
     create_session as create_terminal_session,
@@ -486,15 +496,56 @@ async def invocations(http_request: Request, request: dict[str, Any]):
 
         elif path == "/files/save" and method == "POST":
             # Save file - resolve path based on project context
-            req = SaveFileRequest(**payload)
+            save_payload = payload.copy()
             # If project_name is provided in session, prepend the project base path
             if project_name:
                 from pathlib import Path
                 workspace_base = os.environ.get("WORKSPACE_BASE_PATH", "/workspace")
                 project_base = Path(workspace_base) / project_name
-                if not Path(req.path).is_absolute():
-                    req.path = str(project_base / req.path)
+                if not Path(save_payload.get("path", "")).is_absolute():
+                    save_payload["path"] = str(project_base / save_payload.get("path", ""))
+            req = SaveFileRequest(**save_payload)
             return await save_file(req)
+
+        elif path == "/files/delete" and method == "POST":
+            # Delete file - resolve path based on project context
+            delete_payload = payload.copy()
+            # If project_name is provided in session, prepend the project base path
+            if project_name:
+                from pathlib import Path
+                workspace_base = os.environ.get("WORKSPACE_BASE_PATH", "/workspace")
+                project_base = Path(workspace_base) / project_name
+                if not Path(delete_payload.get("path", "")).is_absolute():
+                    delete_payload["path"] = str(project_base / delete_payload.get("path", ""))
+            req = DeleteFileRequest(**delete_payload)
+            return await delete_file(req)
+
+        elif path == "/files/upload" and method == "POST":
+            # Upload file using base64 - resolve path based on project context
+            upload_payload = payload.copy()
+            # If project_name is provided in session, prepend the project base path
+            if project_name:
+                from pathlib import Path
+                workspace_base = os.environ.get("WORKSPACE_BASE_PATH", "/workspace")
+                project_base = Path(workspace_base) / project_name
+                if not Path(upload_payload.get("directory", "")).is_absolute():
+                    upload_payload["directory"] = str(project_base / upload_payload.get("directory", ""))
+            req = UploadFileBase64Request(**upload_payload)
+            return await upload_file_base64(req)
+
+        elif path == "/files/raw" and method == "GET":
+            # Get raw file content - resolve path based on project context
+            file_path = payload.get("path")
+            if not file_path:
+                raise HTTPException(status_code=400, detail="Missing 'path' in payload")
+            # If project_name is provided in session, prepend the project base path
+            if project_name:
+                from pathlib import Path
+                workspace_base = os.environ.get("WORKSPACE_BASE_PATH", "/workspace")
+                project_base = Path(workspace_base) / project_name
+                if not Path(file_path).is_absolute():
+                    file_path = str(project_base / file_path)
+            return await get_raw_file(path=file_path)
 
         elif path == "/shell/execute" and method == "POST":
             # Execute shell command (returns streaming response)
