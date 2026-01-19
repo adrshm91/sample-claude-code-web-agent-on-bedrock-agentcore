@@ -1,6 +1,7 @@
 """API endpoint routers."""
 
 from .agentcore import router as agentcore_router
+from .env_vars import router as env_vars_router
 from .files import router as files_router
 from .git import router as git_router
 from .invocations import router as invocations_router
@@ -28,4 +29,5 @@ __all__ = [
     "oauth_router",
     "mcp_servers_router",
     "plugins_router",
+    "env_vars_router",
 ]

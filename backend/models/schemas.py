@@ -269,3 +269,53 @@ class DeleteMCPServerResponse(BaseModel):
     status: str
     message: str
     server_name: str
+
+
+# ============================================================================
+# Environment Variables Schemas
+# ============================================================================
+
+
+class GetEnvVarsResponse(BaseModel):
+    """Response containing environment variables from settings.json."""
+
+    env_vars: dict[str, str]
+    settings_path: str
+    exists: bool
+
+
+class SetEnvVarRequest(BaseModel):
+    """Request to set a single environment variable."""
+
+    key: str
+    value: str
+
+
+class SetEnvVarResponse(BaseModel):
+    """Response from setting an environment variable."""
+
+    status: str
+    message: str
+    key: str
+
+
+class DeleteEnvVarResponse(BaseModel):
+    """Response from deleting an environment variable."""
+
+    status: str
+    message: str
+    key: str
+
+
+class SetAllEnvVarsRequest(BaseModel):
+    """Request to set all environment variables at once."""
+
+    env_vars: dict[str, str]
+
+
+class SetAllEnvVarsResponse(BaseModel):
+    """Response from setting all environment variables."""
+
+    status: str
+    message: str
+    count: int

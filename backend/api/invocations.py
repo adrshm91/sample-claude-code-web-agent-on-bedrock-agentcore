@@ -846,6 +846,35 @@ async def invocations(http_request: Request, request: dict[str, Any]):
                 )
             return await get_plugin_detail(marketplace_name, plugin_name)
 
+        elif path == "/env-vars" and method == "GET":
+            # List environment variables
+            from .env_vars import get_env_vars
+            return await get_env_vars()
+
+        elif path == "/env-vars" and method == "POST":
+            # Set a single environment variable
+            from .env_vars import set_env_var
+            from ..models.schemas import SetEnvVarRequest
+            req = SetEnvVarRequest(**payload)
+            return await set_env_var(req)
+
+        elif path == "/env-vars" and method == "PUT":
+            # Set all environment variables
+            from .env_vars import set_all_env_vars
+            from ..models.schemas import SetAllEnvVarsRequest
+            req = SetAllEnvVarsRequest(**payload)
+            return await set_all_env_vars(req)
+
+        elif path.startswith("/env-vars/") and method == "DELETE":
+            # Delete an environment variable
+            from .env_vars import delete_env_var
+            key = path_params.get("key")
+            if not key:
+                raise HTTPException(
+                    status_code=400, detail="Missing key in path_params"
+                )
+            return await delete_env_var(key)
+
         elif path == "/health" and method == "GET":
             # Health check - import here to avoid circular dependency
             from ..server import health_check

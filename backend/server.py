@@ -50,6 +50,7 @@ logger = logging.getLogger(__name__)
 
 from .api import (
     agentcore_router,
+    env_vars_router,
     files_router,
     git_router,
     invocations_router,
@@ -188,6 +189,9 @@ app.include_router(mcp_servers_router, tags=["mcp-servers"])
 
 # Plugins management endpoints
 app.include_router(plugins_router, tags=["plugins"])
+
+# Environment variables endpoints
+app.include_router(env_vars_router, tags=["env-vars"])
 
 # AgentCore session management endpoints
 app.include_router(agentcore_router, tags=["agentcore"])

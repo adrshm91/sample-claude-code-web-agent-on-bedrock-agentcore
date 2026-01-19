@@ -929,6 +929,65 @@ class DirectAPIClient {
     }
     return response.json()
   }
+
+  // Environment variables management
+  async listEnvVars() {
+    const authHeaders = await getAuthHeaders()
+    const response = await fetch(`${this.baseUrl}/env-vars`, {
+      headers: authHeaders
+    })
+    if (!response.ok) {
+      throw new Error('Failed to list environment variables')
+    }
+    return response.json()
+  }
+
+  async setEnvVar(key, value) {
+    const authHeaders = await getAuthHeaders()
+    const response = await fetch(`${this.baseUrl}/env-vars`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders
+      },
+      body: JSON.stringify({ key, value })
+    })
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Failed to set environment variable')
+    }
+    return response.json()
+  }
+
+  async deleteEnvVar(key) {
+    const authHeaders = await getAuthHeaders()
+    const response = await fetch(`${this.baseUrl}/env-vars/${encodeURIComponent(key)}`, {
+      method: 'DELETE',
+      headers: authHeaders
+    })
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Failed to delete environment variable')
+    }
+    return response.json()
+  }
+
+  async setAllEnvVars(envVars) {
+    const authHeaders = await getAuthHeaders()
+    const response = await fetch(`${this.baseUrl}/env-vars`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders
+      },
+      body: JSON.stringify({ env_vars: envVars })
+    })
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.detail || 'Failed to set environment variables')
+    }
+    return response.json()
+  }
 }
 
 /**
@@ -1639,6 +1698,23 @@ class InvocationsAPIClient {
 
   async getPluginDetail(marketplaceName, pluginName) {
     return this._invoke('/plugins/{marketplace_name}/{plugin_name}', 'GET', null, { marketplace_name: marketplaceName, plugin_name: pluginName })
+  }
+
+  // Environment variables management
+  async listEnvVars() {
+    return this._invoke('/env-vars', 'GET')
+  }
+
+  async setEnvVar(key, value) {
+    return this._invoke('/env-vars', 'POST', { key, value })
+  }
+
+  async deleteEnvVar(key) {
+    return this._invoke('/env-vars/{key}', 'DELETE', null, { key })
+  }
+
+  async setAllEnvVars(envVars) {
+    return this._invoke('/env-vars', 'PUT', { env_vars: envVars })
   }
 }
 
