@@ -16,13 +16,14 @@ const USE_INVOCATIONS = import.meta.env.VITE_USE_INVOCATIONS === 'true'
  * Helper to handle authentication errors in fetch responses
  */
 function handleFetchResponse(response) {
-  if (response.status === 401) {
-    console.error('🔐 Authentication failed - triggering logout')
-    handleAuthError()
-    const error = new Error('Authentication required')
-    error.status = 401
-    throw error
-  }
+  // DISABLED FOR LOCAL DEVELOPMENT - Don't trigger logout on 401
+  // if (response.status === 401) {
+  //   console.error('🔐 Authentication failed - triggering logout')
+  //   handleAuthError()
+  //   const error = new Error('Authentication required')
+  //   error.status = 401
+  //   throw error
+  // }
   return response
 }
 

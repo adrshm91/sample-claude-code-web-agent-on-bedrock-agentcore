@@ -663,12 +663,13 @@ function AppContent() {
   }
 
   // Show auth screens if not logged in
-  if (!user) {
-    if (authView === 'signup') {
-      return <Signup onSwitchToLogin={() => setAuthView('login')} />
-    }
-    return <Login onSwitchToSignup={() => setAuthView('signup')} />
-  }
+  // DISABLED FOR LOCAL DEVELOPMENT - Bypass authentication
+  // if (!user) {
+  //   if (authView === 'signup') {
+  //     return <Signup onSwitchToLogin={() => setAuthView('login')} />
+  //   }
+  //   return <Login onSwitchToSignup={() => setAuthView('signup')} />
+  // }
 
   // Main app content (user is authenticated)
   return (

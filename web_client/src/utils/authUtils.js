@@ -100,8 +100,10 @@ export async function getAgentCoreSessionId(project = null) {
 export async function getAuthHeaders(includeSessionId = false, project = null) {
   const token = await getValidAccessToken()
 
+  // LOCAL DEVELOPMENT: Allow requests without authentication
   if (!token) {
-    throw new Error('Not authenticated')
+    console.warn('⚠️  No auth token - running in local development mode')
+    return {} // Return empty headers instead of throwing
   }
 
   const headers = {
