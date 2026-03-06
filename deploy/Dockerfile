@@ -5,7 +5,7 @@ FROM node:trixie-slim
 ENV PATH="/root/.local/bin:${PATH}"
 
 RUN apt update && \
-    apt install -y curl git git-lfs wget gh vim && \
+    apt install -y curl git git-lfs wget gh vim python3 python3-pip && \
     npm install -g @anthropic-ai/claude-code && \
     curl -LsSf https://astral.sh/uv/install.sh | sh && \
     echo "export VIRTUAL_ENV_DISABLE_PROMPT=1" >> /root/.bashrc && \
@@ -17,8 +17,11 @@ COPY . /app/
 # Set working directory
 WORKDIR /app
 
-# Expose port 8080
-EXPOSE 8080
+# Install Python dependencies during build
+RUN uv sync
 
-# Run the server on port 8080
+# Expose port 8000
+EXPOSE 8000
+
+# Run the server on port 8000
 CMD ["/app/serve"]

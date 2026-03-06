@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  claude-agent-api-server:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+      network: host
+    container_name: claude-agent-api-server
+    ports:
+      - "8000:8000"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 10.255.255.254
+    environment:
+      # AWS Bedrock Configuration
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN}
+
+      # Enable Bedrock
+      - CLAUDE_CODE_USE_BEDROCK=1
+
+      # Placeholder token (required by SDK but not used with Bedrock)
+      - ANTHROPIC_AUTH_TOKEN=placeholder
+
+      # Optional: S3 Workspace Configuration
+      - S3_WORKSPACE_BUCKET=${S3_WORKSPACE_BUCKET}
+      - S3_WORKSPACE_PREFIX=${S3_WORKSPACE_PREFIX}
+      - WORKSPACE_BASE_PATH=${WORKSPACE_BASE_PATH:-/app/workspaces}
+
+      # Python unbuffered output for real-time logs
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    volumes:
+      # Optional: Mount local AWS credentials
+      # - ~/.aws:/root/.aws:ro
+
+      # Optional: Persist workspace data
+      - workspace-data:/app/workspaces
+
+      # Optional: Persist Claude session data
+      - claude-sessions:/root/.claude
+
+volumes:
+  workspace-data:
+  claude-sessions:
