@@ -60,7 +60,6 @@ async def send_message(session_id: str, request: SendMessageRequest):
     return await session.send_message(request.message)
 
 
-@router.post("/sessions/{session_id}/messages/stream")
 def safe_json_dumps(obj):
     """
     Safely serialize objects to JSON, handling non-serializable objects.
@@ -81,6 +80,7 @@ def safe_json_dumps(obj):
     return json.dumps(obj, default=default_handler)
 
 
+@router.post("/sessions/{session_id}/messages/stream")
 async def send_message_stream(session_id: str, request: SendMessageRequest):
     """
     Send a message in a session with streaming response (SSE).
